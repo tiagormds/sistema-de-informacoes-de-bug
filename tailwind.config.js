@@ -10,6 +10,18 @@ export default {
         './resources/js/**/*.vue',
     ],
 
+    safelist: [
+        {
+            pattern: /bg-(red|green|blue|orange|gray)-100/,
+        },
+        {
+            pattern: /text-(red|green|blue|orange|gray)-800/,
+        },
+        {
+            pattern: /border-(red|green|blue|orange|gray)-200/,
+        },
+    ],
+
     theme: {
         extend: {
             fontFamily: {

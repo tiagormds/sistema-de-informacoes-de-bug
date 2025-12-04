@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\BugController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\TaskController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -25,6 +26,7 @@ Route::middleware('auth')->group(function () {
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
     Route::resource('bugs', BugController::class);
+    Route::get('/kanban', [TaskController::class, 'index'])->name('kanban.index');
 });
 
 require __DIR__.'/auth.php';
