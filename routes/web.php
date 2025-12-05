@@ -27,6 +27,7 @@ Route::middleware('auth')->group(function () {
 
     Route::resource('bugs', BugController::class);
     Route::get('/kanban', [TaskController::class, 'index'])->name('kanban.index');
+    Route::put('/tasks/{task}/move', [TaskController::class, 'move'])->name('tasks.move');
 });
 
 require __DIR__.'/auth.php';

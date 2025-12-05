@@ -1,5 +1,6 @@
 <script setup>
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
+import axios from 'axios';
 import { Head } from '@inertiajs/vue3';
 import { ref, watch } from 'vue';
 import draggable from 'vuedraggable';
@@ -13,9 +14,31 @@ const inProgressTasks = ref(props.tasks.filter(t => t.status === 'in_progress'))
 const completedTasks = ref(props.tasks.filter(t => t.status === 'completed'));
 
 // --- 2. Função "Fake" para testar o visual (Log no console) ---
-const onDragChange = (event) => {
-    console.log("Algo mudou!", event);
-    // Aqui depois vamos chamar a API para salvar no banco
+const onDragChange = (event, newStatus) => {
+
+    // Cenário 1: "added" (Veio de outra coluna)
+    // Cenário 2: "moved" (Mudou de ordem na mesma coluna)
+    let item = null;
+    let newIndex = null;
+
+    if (event.added) {
+        item = event.added.element;
+        newIndex = event.added.newIndex;
+    } else if (event.moved) {
+        item = event.moved.element;
+        newIndex = event.moved.newIndex;
+    }
+
+    // Se houve mudança real, chama a API
+    if (item) {
+        axios.put(route('tasks.move', item.id), {
+            status: newStatus,
+            newPosition: newIndex
+        }).catch(error => {
+            console.error("Erro ao salvar movimento:", error);
+            alert("Erro ao sincronizar! Dê F5.");
+        });
+    }
 };
 </script>
 
@@ -42,7 +65,7 @@ const onDragChange = (event) => {
                             v-model="pendingTasks"
                             group="tasks"
                             item-key="id"
-                            @change="onDragChange"
+                            @change="(e) => onDragChange(e, 'pending')"
                             class="space-y-3 min-h-[200px]"
                         >
                             <template #item="{ element }">
@@ -63,7 +86,7 @@ const onDragChange = (event) => {
                             v-model="inProgressTasks"
                             group="tasks"
                             item-key="id"
-                            @change="onDragChange"
+                            @change="(e) => onDragChange(e, 'in_progress')"
                             class="space-y-3 min-h-[200px]"
                         >
                             <template #item="{ element }">
@@ -84,7 +107,7 @@ const onDragChange = (event) => {
                             v-model="completedTasks"
                             group="tasks"
                             item-key="id"
-                            @change="onDragChange"
+                            @change="(e) => onDragChange(e, 'completed')"
                             class="space-y-3 min-h-[200px]"
                         >
                             <template #item="{ element }">
