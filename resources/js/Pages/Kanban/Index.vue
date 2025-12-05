@@ -4,14 +4,48 @@ import axios from 'axios';
 import { Head } from '@inertiajs/vue3';
 import { ref, watch } from 'vue';
 import draggable from 'vuedraggable';
+import Modal from '@/Components/Modal.vue';
+import InputLabel from '@/Components/InputLabel.vue';
+import TextInput from '@/Components/TextInput.vue';
+import PrimaryButton from '@/Components/PrimaryButton.vue';
+import SecondaryButton from '@/Components/SecondaryButton.vue';
+import { useForm } from '@inertiajs/vue3'
+
+// Controle do Modal
+const showCreateModal = ref(false);
+
+const form = useForm({
+    title: '',
+    description: ''
+});
+
+const submitTask = () => {
+    form.post(route('tasks.store'), {
+        onSuccess: () => {
+            form.reset();
+            showCreateModal.value = false;
+        }
+    });
+};
 
 const props = defineProps(['tasks']);
 
-// --- 1. Separar as tarefas nas 3 colunas (Lógica Local) ---
-// Criamos refs para cada coluna para o Drag&Drop poder manipular
-const pendingTasks = ref(props.tasks.filter(t => t.status === 'pending'));
-const inProgressTasks = ref(props.tasks.filter(t => t.status === 'in_progress'));
-const completedTasks = ref(props.tasks.filter(t => t.status === 'completed'));
+// Refs das colunas (Inicializamos vazios ou com o valor inicial)
+const pendingTasks = ref([]);
+const inProgressTasks = ref([]);
+const completedTasks = ref([]);
+
+// Função que distribui as tarefas nas colunas certas
+const refreshColumns = () => {
+    pendingTasks.value = props.tasks.filter(t => t.status === 'pending');
+    inProgressTasks.value = props.tasks.filter(t => t.status === 'in_progress');
+    completedTasks.value = props.tasks.filter(t => t.status === 'completed');
+};
+
+// O VIGIA: Sempre que props.tasks mudar, rodamos a função de novo
+watch(() => props.tasks, () => {
+    refreshColumns();
+}, { immediate: true }); // 'immediate' garante que rode também ao abrir a página
 
 // --- 2. Função "Fake" para testar o visual (Log no console) ---
 const onDragChange = (event, newStatus) => {
@@ -47,7 +81,12 @@ const onDragChange = (event, newStatus) => {
 
     <AuthenticatedLayout>
         <template #header>
-            <h2 class="font-semibold text-xl text-gray-800 leading-tight">Quadro Kanban 📋</h2>
+            <div class="flex justify-between items-center">
+                <h2 class="font-semibold text-xl text-gray-800 leading-tight">Quadro Kanban 📋</h2>
+                <PrimaryButton @click="showCreateModal = true">
+                    + Nova Tarefa
+                </PrimaryButton>
+            </div>
         </template>
 
         <div class="py-12">
@@ -121,5 +160,43 @@ const onDragChange = (event, newStatus) => {
                 </div>
             </div>
         </div>
+
+        <Modal :show="showCreateModal" @close="showCreateModal = false">
+            <div class="p-6">
+                <h2 class="text-lg font-medium text-gray-900">Nova Tarefa 📌</h2>
+
+                <div class="mt-6">
+                    <InputLabel for="title" value="Título" />
+                    <TextInput
+                        id="title"
+                        v-model="form.title"
+                        type="text"
+                        class="mt-1 block w-full"
+                        placeholder="Ex: Comprar café"
+                        autofocus
+                        @keyup.enter="submitTask"
+                    />
+                    <p v-if="form.errors.title" class="text-sm text-red-600 mt-2">{{ form.errors.title }}</p>
+                </div>
+
+                <div class="mt-4">
+                    <InputLabel for="description" value="Descrição (Opcional)" />
+                    <textarea
+                        v-model="form.description"
+                        class="mt-1 block w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm"
+                        rows="3"
+                        placeholder="Detalhes da tarefa..."
+                    ></textarea>
+                </div>
+
+                <div class="mt-6 flex justify-end">
+                    <SecondaryButton @click="showCreateModal = false"> Cancelar </SecondaryButton>
+                    <PrimaryButton class="ml-3" :class="{ 'opacity-25': form.processing }" :disabled="form.processing" @click="submitTask">
+                        Salvar Tarefa
+                    </PrimaryButton>
+                </div>
+            </div>
+        </Modal>
+
     </AuthenticatedLayout>
 </template>
